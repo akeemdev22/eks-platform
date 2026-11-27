@@ -1,0 +1,14 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+
+# Kubernetes and Helm
+kubeconfig*
+*.kubeconfig
+charts/*.tgz
+
+# Mac
+.DS_Store
