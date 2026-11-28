@@ -1,11 +1,12 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: web
   labels:
     app: web
 spec:
   replicas: 3
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: web
@@ -33,3 +34,11 @@ spec:
             httpGet:
               path: /
               port: 8080
+  strategy:
+    canary:
+      steps:
+        - setWeight: 34
+        - pause: {}
+        - setWeight: 67
+        - pause: {duration: 60s}
+        - setWeight: 100

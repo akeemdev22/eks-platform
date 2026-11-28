@@ -10,25 +10,23 @@ spec:
       rules:
         - alert: WebPodsUnavailable
           expr: |
-            kube_deployment_status_replicas_available{namespace="web", deployment="web"}
-              <
-            kube_deployment_spec_replicas{namespace="web", deployment="web"}
+            sum(kube_pod_status_ready{namespace="web", pod=~"web-.*", condition="true"}) < 3
           for: 2m
           labels:
             severity: warning
           annotations:
             summary: "web has fewer ready pods than it should"
-            description: "Some web pods have not been ready for 2 minutes. Check kubectl get pods -n web."
+            description: "Fewer than 3 web pods have been ready for 2 minutes. See docs/runbook.md."
 
         - alert: WebDown
           expr: |
-            kube_deployment_status_replicas_available{namespace="web", deployment="web"} == 0
+            (sum(kube_pod_status_ready{namespace="web", pod=~"web-.*", condition="true"}) or vector(0)) == 0
           for: 1m
           labels:
             severity: critical
           annotations:
             summary: "web has no ready pods"
-            description: "The web app is completely down. Users cannot reach the site."
+            description: "The web app is completely down. Users cannot reach the site. See docs/runbook.md."
 
         - alert: WebPodRestarting
           expr: |
@@ -38,14 +36,13 @@ spec:
           annotations:
             summary: "web pod {{ $labels.pod }} keeps restarting"
             description: "{{ $labels.pod }} restarted more than 2 times in 10 minutes. Check its logs in Loki."
+
         - alert: WebRolloutStuck
           expr: |
-            kube_deployment_status_replicas_updated{namespace="web", deployment="web"}
-              <
-            kube_deployment_spec_replicas{namespace="web", deployment="web"}
+            max by (pod) (kube_pod_container_status_waiting_reason{namespace="web", reason=~"ImagePullBackOff|ErrImagePull|CrashLoopBackOff|CreateContainerConfigError"}) > 0
           for: 5m
           labels:
             severity: warning
           annotations:
-            summary: "web deployment is stuck and the new version is not rolling out"
-            description: "Fewer pods are on the latest version than expected for 5 minutes. Check kubectl describe pod for image or startup errors, then git revert the last change."
+            summary: "web pod {{ $labels.pod }} cannot start"
+            description: "{{ $labels.pod }} has been stuck for 5 minutes (bad image or crashing). Check kubectl describe pod, then git revert the last change."
