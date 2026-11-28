@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: nginxinc/nginx-unprivileged:stable-alpine
+          image: 610222269500.dkr.ecr.eu-west-2.amazonaws.com/eks-platform-web:317aa3d
           ports:
             - containerPort: 8080
           resources:
