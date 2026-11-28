@@ -38,3 +38,14 @@ spec:
           annotations:
             summary: "web pod {{ $labels.pod }} keeps restarting"
             description: "{{ $labels.pod }} restarted more than 2 times in 10 minutes. Check its logs in Loki."
+        - alert: WebRolloutStuck
+          expr: |
+            kube_deployment_status_replicas_updated{namespace="web", deployment="web"}
+              <
+            kube_deployment_spec_replicas{namespace="web", deployment="web"}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "web deployment is stuck and the new version is not rolling out"
+            description: "Fewer pods are on the latest version than expected for 5 minutes. Check kubectl describe pod for image or startup errors, then git revert the last change."
