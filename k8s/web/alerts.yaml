@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: web-alerts
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: web.rules
+      rules:
+        - alert: WebPodsUnavailable
+          expr: |
+            kube_deployment_status_replicas_available{namespace="web", deployment="web"}
+              <
+            kube_deployment_spec_replicas{namespace="web", deployment="web"}
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "web has fewer ready pods than it should"
+            description: "Some web pods have not been ready for 2 minutes. Check kubectl get pods -n web."
+
+        - alert: WebDown
+          expr: |
+            kube_deployment_status_replicas_available{namespace="web", deployment="web"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "web has no ready pods"
+            description: "The web app is completely down. Users cannot reach the site."
+
+        - alert: WebPodRestarting
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="web"}[10m]) > 2
+          labels:
+            severity: warning
+          annotations:
+            summary: "web pod {{ $labels.pod }} keeps restarting"
+            description: "{{ $labels.pod }} restarted more than 2 times in 10 minutes. Check its logs in Loki."
